@@ -4,12 +4,48 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>MeteoUA | Погода в Україні</title>
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#2980b9">
-  <link rel="apple-touch-icon" href="icon-192x192.png">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  
+  <!-- SEO оптимізація -->
+<meta name="description" content="MeteoUA: точний прогноз погоди в Україні на сьогодні, завтра та 5 днів. Погода в Києві, Львові, Одесі, Харкові та всіх містах. Оновлюється в реальному часі.">
+<meta name="keywords" content="погода, прогноз погоди, погода в Україні, погода сьогодні, погода зараз, метеопрогноз, погода Київ, погода Львів, погода Одеса, погода Харків, погода Дніпро">
+<meta name="author" content="MeteoUA">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph теги -->
+<meta property="og:title" content="MeteoUA | Точний прогноз погоди в Україні">
+<meta property="og:description" content="Актуальна погода для вашого міста. Перевірте температуру, вологість, вітер та прогноз на тиждень.">
+<meta property="og:image" content="https://meteo-ua.web.app/og-image.jpg">
+<meta property="og:url" content="https://meteo-ua.web.app">
+<meta property="og:type" content="website">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MeteoUA | Погода в Україні">
+<meta name="twitter:description" content="Точний прогноз погоди для всіх міст України в реальному часі.">
+<meta name="twitter:image" content="https://meteo-ua.web.app/twitter-card.jpg">
+
+<!-- Канонічне посилання -->
+<link rel="canonical" href="https://meteo-ua.web.app">
+
+<!-- Structured Data (Schema.org) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "MeteoUA",
+  "url": "https://meteo-ua.web.app",
+  "description": "Точний погодний прогноз для міст України в реальному часі.",
+  "inLanguage": "uk"
+}
+</script>
+
+<!-- Інші мета-дані -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2980b9">
+<link rel="apple-touch-icon" href="/icon-192x192.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     * {
       margin: 0;
@@ -1209,11 +1245,11 @@
       <a href="#" onclick="showContact()">Контакти</a>
       <a href="#" onclick="showPrivacy()">Політика конфіденційності</a>
     </div>
-    <!-- Доданий лічильник переглядів -->
+    <!-- Лічильник переглядів з alt текстом -->
     <div style="text-align:center; margin-top: 1rem;">
       <img 
         src="https://hits.sh/meteo-ua.web.app.svg?style=flat-square&label=Перегляди&color=blue" 
-        alt="Перегляди"
+        alt="Лічильник переглядів MeteoUA"
         style="max-width: 100%; height: auto;"
       />
     </div>
