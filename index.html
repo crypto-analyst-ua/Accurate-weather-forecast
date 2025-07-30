@@ -1264,11 +1264,6 @@
       <p>ПогодаUA - це інноваційний сервіс прогнозу погоди, спеціально розроблений для потреб України. Наша місія - надавати точні та своєчасні метеорологічні дані для всіх регіонів країни.</p>
       <p>Використовуємо дані з надійних джерел та сучасні технології аналізу для забезпечення найкращого досвіду користувачів.</p>
       <p>Наші прогнози допомагають планувати день, подорожі та робочі процеси з урахуванням погодних умов.</p>
-      <div class="social-links">
-        <a href="#"><i class="fab fa-facebook"></i></a>
-        <a href="#"><i class="fab fa-telegram"></i></a>
-        <a href="#"><i class="fab fa-twitter"></i></a>
-        <a href="#"><i class="fab fa-instagram"></i></a>
       </div>
     </div>
   </div>
@@ -1277,14 +1272,7 @@
     <div class="modal-content">
       <span class="close" onclick="closeModal('contactModal')">&times;</span>
       <h3>Наші контакти</h3>
-      <p><i class="fas fa-envelope"></i> Email: support@pogoda-ua.ua</p>
-      <p><i class="fas fa-phone"></i> Телефон: +380 44 123 4567</p>
-      <p><i class="fas fa-map-marker-alt"></i> Адреса: м. Київ, вул. Хрещатик, 1</p>
-      <div class="social-links">
-        <a href="#"><i class="fab fa-facebook"></i></a>
-        <a href="#"><i class="fab fa-telegram"></i></a>
-        <a href="#"><i class="fab fa-twitter"></i></a>
-        <a href="#"><i class="fab fa-instagram"></i></a>
+      <p><i class="fas fa-envelope"></i> Email: voanarhes@gmail.com</p>
       </div>
     </div>
   </div>
@@ -1514,7 +1502,7 @@
       const sunset = new Date(data.sys.sunset * 1000);
       
       // Calculate dew point
-      const dewPoint = calculateDewPoint(data.main.temp, data.main.humidity);
+      const dewPoint = calculateDewPoint(data.main.temp, data.main.humidity, currentUnit);
       
       const result = `
         <div class="weather-info">
@@ -1570,6 +1558,9 @@
       // Render precipitation chart
       renderPrecipitationChart();
       
+      // Update stats
+      updateStats();
+      
       // Add animation to weather icon
       setTimeout(() => {
         const icon = document.querySelector('.weather-icon');
@@ -1595,6 +1586,49 @@
           console.error("Помилка прогнозу:", error);
           document.getElementById("forecastContainer").style.display = 'none';
         });
+    }
+
+    // Групування прогнозу по днях
+    function groupForecastByDay(list) {
+      const days = {};
+      list.forEach(item => {
+        const date = new Date(item.dt * 1000);
+        const dayKey = date.toISOString().split('T')[0];
+        if (!days[dayKey]) days[dayKey] = [];
+        days[dayKey].push(item);
+      });
+      
+      // Вибираємо прогноз близько 12:00 для кожного дня
+      return Object.values(days).map(dayItems => {
+        return dayItems.find(item => {
+          const hours = new Date(item.dt * 1000).getHours();
+          return hours >= 11 && hours <= 13;
+        }) || dayItems[0];
+      }).slice(0, 5);
+    }
+
+    function displayForecast(data) {
+      const forecastElement = document.getElementById("forecast");
+      forecastElement.innerHTML = '';
+      
+      // Використовуємо нову функцію групування
+      const dailyForecast = groupForecastByDay(data.list);
+
+      dailyForecast.forEach(day => {
+        const date = new Date(day.dt * 1000);
+        const dayName = date.toLocaleDateString('uk-UA', { weekday: 'long' });
+        const tempUnit = currentUnit === 'metric' ? '°C' : '°F';
+        const weatherIcon = getWeatherIcon(day.weather[0].id);
+        
+        forecastElement.innerHTML += `
+          <div class="forecast-card">
+            <div class="forecast-day">${dayName}</div>
+            <div class="forecast-icon">${weatherIcon}</div>
+            <div class="forecast-temp">${Math.round(day.main.temp)}${tempUnit}</div>
+            <div class="forecast-desc">${day.weather[0].description}</div>
+          </div>
+        `;
+      });
     }
 
     function getHourlyForecast(lat, lon) {
@@ -1624,43 +1658,23 @@
         });
     }
     
+    // Оновлено до One Call API 2.5
     function getWeatherAlerts(lat, lon) {
-      fetch(`https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&appid=${apiKey}&exclude=minutely,hourly,daily`)
-        .then(response => response.json())
+      fetch(`https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&appid=${apiKey}&exclude=minutely,hourly,daily`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error("Не вдалося отримати попередження");
+          }
+          return response.json();
+        })
         .then(data => {
           if (data.alerts && data.alerts.length > 0) {
             showAlert(data.alerts[0]);
           }
         })
         .catch(error => {
-          console.error("Помилка отримання попереджень:", error);
+          console.error("Помилка отримання попереджень:", error.message);
         });
-    }
-
-    function displayForecast(data) {
-      const forecastElement = document.getElementById("forecast");
-      forecastElement.innerHTML = '';
-      
-      // Filter for one forecast per day (at 12:00)
-      const dailyForecast = data.list.filter(item => 
-        item.dt_txt.includes("12:00:00")
-      ).slice(0, 5);
-
-      dailyForecast.forEach(day => {
-        const date = new Date(day.dt * 1000);
-        const dayName = date.toLocaleDateString('uk-UA', { weekday: 'long' });
-        const tempUnit = currentUnit === 'metric' ? '°C' : '°F';
-        const weatherIcon = getWeatherIcon(day.weather[0].id);
-        
-        forecastElement.innerHTML += `
-          <div class="forecast-card">
-            <div class="forecast-day">${dayName}</div>
-            <div class="forecast-icon">${weatherIcon}</div>
-            <div class="forecast-temp">${Math.round(day.main.temp)}${tempUnit}</div>
-            <div class="forecast-desc">${day.weather[0].description}</div>
-          </div>
-        `;
-      });
     }
 
     function displayHourlyForecast(data) {
@@ -1778,11 +1792,20 @@
       }
     }
     
-    function calculateDewPoint(temp, humidity) {
+    // Оновлено: враховуємо одиниці вимірювання
+    function calculateDewPoint(temp, humidity, unit) {
+      // Конвертуємо в °C для розрахунків
+      let tempC = unit === 'metric' ? temp : (temp - 32) * 5/9;
+      
       const a = 17.27;
       const b = 237.7;
-      const alpha = (a * temp) / (b + temp) + Math.log(humidity/100);
-      return ((b * alpha) / (a - alpha)).toFixed(1);
+      const alpha = (a * tempC) / (b + tempC) + Math.log(humidity/100);
+      let dewPoint = (b * alpha) / (a - alpha);
+      
+      // Конвертуємо назад у необхідні одиниці
+      return unit === 'metric' 
+        ? dewPoint.toFixed(1)
+        : (dewPoint * 9/5 + 32).toFixed(1);
     }
     
     function saveCity() {
@@ -1904,19 +1927,19 @@
       });
     }
 
-    // Service Worker registration
-    function registerServiceWorker() {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('Service Worker зареєстровано'))
-          .catch(err => console.error('Помилка реєстрації Service Worker:', err));
-      }
+    // Initialize map with default view
+    function initDefaultMap() {
+      map = L.map('map').setView([49.0, 31.5], 6); // Center on Ukraine
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+      mapInitialized = true;
     }
 
     // Initialize
     window.onload = function() {
       initDarkMode();
-      registerServiceWorker();
+      initDefaultMap(); // Initialize map on load
       
       // Load last city from localStorage
       const savedCity = localStorage.getItem('lastCity');
