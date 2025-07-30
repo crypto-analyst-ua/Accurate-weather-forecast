@@ -1,6 +1,5 @@
 {
   "hosting": {
-    "site": "crypto-insights-ua",
     "public": ".",
     "ignore": [
       "firebase.json",
