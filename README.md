@@ -35,8 +35,7 @@
 
 1. Клонуйте репозиторій:
    ```bash
-   git clone https://github.com/your-username/pogoda-ukr.git
-   cd pogoda-ukr
+   git clone https://github.com/crypto-analyst-ua/Accurate-weather-forecast
    ```
 
 2. Відкрийте файл `index.html` у браузері.
@@ -54,13 +53,6 @@ firebase init
 firebase deploy
 ```
 
----
-
-## 🖼️ Скриншоти
-
-_(Можна додати за потребою: головна сторінка, пошук, карта, прогноз)_
-
----
 
 ## 📜 Ліцензія
 
