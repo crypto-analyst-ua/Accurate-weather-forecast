@@ -35,7 +35,7 @@
 
 1. Клонуйте репозиторій:
    ```bash
-   git clone https://github.com/crypto-analyst-ua/Accurate-weather-forecast
+   git clone https://github.com/crypto-analyst-ua/crypto-insights.git
    ```
 
 2. Відкрийте файл `index.html` у браузері.
