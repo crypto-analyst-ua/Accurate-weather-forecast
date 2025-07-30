@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MeteoUA | Погода в Україні</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      transition: background 0.5s ease, transform 0.3s ease, opacity 0.3s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --primary: #2980b9;
+      --secondary: #2c3e50;
+      --accent: #e74c3c;
+      --text: #ecf0f1;
+      --card-bg: rgba(255, 255, 255, 0.1);
+      --card-bg-dark: rgba(13, 27, 42, 0.7);
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      --gradient-day: linear-gradient(135deg, #1e5799, #207cca, #2989d8);
+      --gradient-night: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+      --gradient-sunset: linear-gradient(135deg, #6a11cb, #2575fc, #ff7e5f);
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--gradient-day);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+      position: relative;
+      touch-action: manipulation;
+    }
+
+    body.dark-mode {
+      background: var(--gradient-night);
+    }
+
+    /* Particle background */
+    #particles-js {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: -1;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50% }
+      50% { background-position: 100% 50% }
+      100% { background-position: 0% 50% }
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 10;
+      padding: 0 8px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 8px;
+      position: relative;
+      animation: fadeInDown 0.8s ease;
+    }
+
+    .theme-toggle {
+      position: relative;
+      top: 0;
+      right: 0;
+      margin: 0 auto 15px;
+      width: fit-content;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 30px;
+      padding: 10px 20px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      z-index: 100;
+    }
+
+    .theme-toggle:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    header h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 2rem;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-top: 5px;
+    }
+
+    header p {
+      font-size: 1rem;
+      opacity: 0.9;
+      max-width: 600px;
+      margin: 0 auto;
+      font-weight: 300;
+      padding: 0 10px;
+    }
+
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      margin-bottom: 25px;
+    }
+
+    .weather-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      animation: fadeIn 0.8s ease;
+    }
+
+    body.dark-mode .weather-card {
+      background: var(--card-bg-dark);
+    }
+
+    .search-container {
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .search-container i {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #5c9edc;
+      z-index: 2;
+    }
+
+    #city {
+      width: 100%;
+      padding: 16px 16px 16px 45px;
+      border: none;
+      border-radius: 50px;
+      background: rgba(255, 255, 255, 0.9);
+      font-size: 1rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 1;
+      -webkit-appearance: none;
+      font-size: 1.05rem;
+    }
+
+    #city:focus {
+      outline: none;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      background: white;
+    }
+
+    .btn-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    button {
+      flex: 1;
+      padding: 16px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(to right, #4facfe, #00f2fe);
+      color: white;
+      font-weight: 500;
+      font-size: 1.05rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 56px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+      background: linear-gradient(to right, #3a9dfc, #00d9fe);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    #location-btn {
+      background: linear-gradient(to right, #43e97b, #38f9d7);
+    }
+
+    .result-container {
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+    }
+
+    #result {
+      width: 100%;
+    }
+
+    .weather-icon {
+      font-size: 4.2rem;
+      margin: 12px 0;
+      color: #FFD700;
+      transition: transform 0.5s ease;
+      filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+    }
+
+    .temp {
+      font-size: 3rem;
+      font-weight: 700;
+      margin: 6px 0;
+      font-family: 'Montserrat', sans-serif;
+      text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .city-name {
+      font-size: 1.6rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .weather-desc {
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      text-transform: capitalize;
+      font-weight: 500;
+    }
+
+    .feels-like {
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      position: relative;
+      display: inline-block;
+      padding-bottom: 6px;
+    }
+
+    .feels-like::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60%;
+      height: 2px;
+      background: linear-gradient(to right, transparent, rgba(255,255,255,0.5), transparent);
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      width: 100%;
+      margin-top: 18px;
+    }
+
+    .detail-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 14px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.3s ease;
+      min-height: 120px;
+    }
+
+    body.dark-mode .detail-card {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .detail-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .detail-card i {
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+      color: #a8d8ff;
+    }
+
+    .detail-value {
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin: 4px 0;
+    }
+
+    .detail-label {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .loading-spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 4px solid #fff;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error {
+      color: #ff6b6b;
+      text-align: center;
+      padding: 12px;
+      font-weight: 500;
+      font-size: 1.1rem;
+    }
+
+    .error button {
+      margin-top: 10px;
+      background: rgba(255, 255, 255, 0.2);
+      min-height: 48px;
+    }
+
+    .popular-cities {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 15px;
+    }
+
+    .city-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 30px;
+      padding: 10px 16px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.95rem;
+      white-space: nowrap;
+      min-height: 40px;
+    }
+
+    .city-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 12px;
+      padding: 12px;
+      font-size: 0.85rem;
+      opacity: 0.8;
+      animation: fadeInUp 0.8s ease;
+    }
+
+    .unit-toggle {
+      display: flex;
+      justify-content: center;
+      margin: 12px 0;
+      gap: 8px;
+    }
+
+    .unit-btn {
+      padding: 10px 24px;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 30px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+      min-height: 42px;
+    }
+
+    .unit-btn.active {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Forecast styles */
+    .forecast-container {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .forecast-header {
+      text-align: center;
+      margin-bottom: 18px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .forecast {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .forecast-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 15px 10px;
+      text-align: center;
+      transition: transform 0.3s ease;
+      min-height: 160px;
+    }
+
+    body.dark-mode .forecast-card {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .forecast-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .forecast-day {
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    .forecast-icon {
+      font-size: 2rem;
+      margin: 8px 0;
+      color: #FFD700;
+      filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.3));
+    }
+
+    .forecast-temp {
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin: 4px 0;
+    }
+
+    .forecast-desc {
+      font-size: 0.9rem;
+      opacity: 0.9;
+      margin-top: 4px;
+      text-transform: capitalize;
+    }
+
+    .update-time {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+
+    /* Hourly forecast */
+    .hourly-container {
+      margin-top: 20px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .hourly-header {
+      text-align: center;
+      margin-bottom: 16px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .hourly-forecast {
+      display: flex;
+      gap: 10px;
+      padding: 8px;
+      min-width: 100%;
+      width: max-content;
+    }
+
+    .hourly-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 12px;
+      min-width: 85px;
+      text-align: center;
+      transition: transform 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    body.dark-mode .hourly-card {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .hourly-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .hourly-time {
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .hourly-icon {
+      font-size: 1.8rem;
+      margin: 8px 0;
+      color: #FFD700;
+      filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.3));
+    }
+
+    .hourly-temp {
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin: 4px 0;
+    }
+
+    /* Map container */
+    #map {
+      height: 280px;
+      width: 100%;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin-top: 20px;
+      z-index: 1;
+    }
+
+    .leaflet-control-attribution {
+      display: none;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.8s ease forwards;
+    }
+
+    /* Stats */
+    .stats-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 16px;
+      text-align: center;
+      transition: transform 0.3s ease;
+      min-height: 110px;
+    }
+
+    body.dark-mode .stat-card {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .stat-title {
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+      opacity: 0.8;
+    }
+
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    /* UV Index */
+    .uv-index {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      margin-top: 5px;
+      font-size: 0.9rem;
+    }
+
+    .uv-low { background: #2ecc71; }
+    .uv-moderate { background: #f1c40f; }
+    .uv-high { background: #e67e22; }
+    .uv-very-high { background: #e74c3c; }
+    .uv-extreme { background: #8e44ad; }
+
+    /* Responsive */
+    @media (min-width: 480px) {
+      .weather-card {
+        padding: 20px;
+      }
+      
+      .btn-container {
+        flex-direction: row;
+      }
+      
+      #location-btn {
+        min-width: 55px;
+        padding: 0;
+      }
+      
+      .popular-cities {
+        gap: 10px;
+      }
+      
+      .city-btn {
+        padding: 10px 18px;
+      }
+      
+      #map {
+        height: 300px;
+      }
+      
+      .temp {
+        font-size: 3.2rem;
+      }
+      
+      .weather-icon {
+        font-size: 4.5rem;
+      }
+      
+      .city-name {
+        font-size: 1.8rem;
+      }
+      
+      .weather-desc {
+        font-size: 1.3rem;
+      }
+    }
+
+    @media (min-width: 768px) {
+      body {
+        padding: 15px;
+      }
+      
+      .app-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      
+      header h1 {
+        font-size: 2.5rem;
+        margin-top: 10px;
+      }
+      
+      .theme-toggle {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        margin: 0;
+      }
+      
+      .weather-card {
+        padding: 22px;
+        border-radius: 20px;
+      }
+      
+      .temp {
+        font-size: 3.5rem;
+      }
+      
+      .weather-icon {
+        font-size: 5rem;
+      }
+
+      .forecast {
+        flex-direction: row;
+        flex-wrap: wrap;
+        display: flex;
+      }
+
+      .forecast-card {
+        min-width: calc(33% - 10px);
+        max-width: calc(33% - 10px);
+      }
+      
+      .details {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      
+      .stats-container {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      
+      #map {
+        height: 320px;
+      }
+    }
+    
+    @media (min-width: 992px) {
+      .container {
+        padding: 0;
+      }
+      
+      header {
+        padding: 15px;
+        margin-bottom: 30px;
+      }
+      
+      header h1 {
+        font-size: 2.8rem;
+      }
+      
+      .app-container {
+        gap: 25px;
+      }
+      
+      .weather-card {
+        padding: 25px;
+      }
+      
+      .temp {
+        font-size: 4rem;
+      }
+      
+      .weather-icon {
+        font-size: 5.5rem;
+      }
+      
+      .city-name {
+        font-size: 2rem;
+      }
+      
+      .weather-desc {
+        font-size: 1.5rem;
+      }
+      
+      #map {
+        height: 350px;
+      }
+    }
+    
+    @media (max-width: 380px) {
+      .forecast {
+        grid-template-columns: 1fr;
+      }
+      
+      .popular-cities {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .city-btn {
+        width: 100%;
+        max-width: 200px;
+      }
+      
+      .details {
+        grid-template-columns: 1fr;
+        max-width: 300px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      
+      .stats-container {
+        grid-template-columns: 1fr;
+      }
+      
+      .temp {
+        font-size: 2.8rem;
+      }
+      
+      .city-name {
+        font-size: 1.5rem;
+      }
+      
+      .weather-desc {
+        font-size: 1.1rem;
+      }
+      
+      #map {
+        height: 240px;
+      }
+    }
+    
+    @media (max-width: 320px) {
+      body {
+        padding: 8px;
+      }
+      
+      header h1 {
+        font-size: 1.8rem;
+      }
+      
+      header p {
+        font-size: 0.95rem;
+      }
+      
+      .weather-card {
+        padding: 15px;
+      }
+      
+      #city {
+        padding: 14px 14px 14px 40px;
+        font-size: 0.95rem;
+      }
+      
+      button {
+        padding: 14px;
+        font-size: 1rem;
+      }
+      
+      .temp {
+        font-size: 2.5rem;
+      }
+      
+      .weather-icon {
+        font-size: 3.8rem;
+      }
+      
+      .city-name {
+        font-size: 1.4rem;
+      }
+      
+      .weather-desc {
+        font-size: 1.05rem;
+      }
+      
+      .forecast-card {
+        min-width: 100%;
+        padding: 12px 8px;
+      }
+      
+      .forecast-temp {
+        font-size: 1.1rem;
+      }
+      
+      .forecast-icon {
+        font-size: 1.8rem;
+      }
+      
+      .hourly-card {
+        min-width: 80px;
+        padding: 10px;
+      }
+      
+      .hourly-time {
+        font-size: 0.9rem;
+      }
+      
+      .hourly-temp {
+        font-size: 1.1rem;
+      }
+      
+      .stat-value {
+        font-size: 1.4rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="particles-js"></div>
+  
+  <div class="container">
+    <header>
+      <button class="theme-toggle" onclick="toggleDarkMode()">
+        <i class="fas fa-moon"></i> Темний режим
+      </button>
+      <h1><i class="fas fa-cloud-sun"></i> MeteoUA</h1>
+      <p>Точний прогноз погоди для будь-якого міста України</p>
+    </header>
+
+    <div class="app-container">
+      <div class="weather-card fade-in">
+        <div class="search-container">
+          <i class="fas fa-search"></i>
+          <input type="text" id="city" placeholder="Введіть місто (наприклад, Київ)" />
+        </div>
+
+        <div class="btn-container">
+          <button onclick="getWeather()">
+            <i class="fas fa-cloud-sun"></i> Показати погоду
+          </button>
+          <button id="location-btn" onclick="getLocation()">
+            <i class="fas fa-location-arrow"></i> Моє місце
+          </button>
+        </div>
+
+        <div class="unit-toggle">
+          <button class="unit-btn active" onclick="setUnit('metric')">°C</button>
+          <button class="unit-btn" onclick="setUnit('imperial')">°F</button>
+        </div>
+
+        <div class="popular-cities">
+          <div class="city-btn" onclick="setCity('Київ')">Київ</div>
+          <div class="city-btn" onclick="setCity('Львів')">Львів</div>
+          <div class="city-btn" onclick="setCity('Одеса')">Одеса</div>
+          <div class="city-btn" onclick="setCity('Харків')">Харків</div>
+          <div class="city-btn" onclick="setCity('Дніпро')">Дніпро</div>
+        </div>
+
+        <div class="result-container">
+          <div class="loading">
+            <div class="loading-spinner"></div>
+            <p>Завантаження даних...</p>
+          </div>
+          
+          <div id="result">
+            <div class="welcome-message">
+              <i class="fas fa-cloud-sun weather-icon"></i>
+              <h2 class="city-name">Ласкаво просимо!</h2>
+              <p class="weather-desc">Введіть назву міста, щоб дізнатися поточну погоду</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="forecast-container" id="forecastContainer" style="display: none;">
+          <h3 class="forecast-header"><i class="fas fa-calendar-days"></i> Прогноз на 5 днів</h3>
+          <div class="forecast" id="forecast"></div>
+        </div>
+      </div>
+      
+      <div class="weather-card fade-in" style="animation-delay: 0.2s;">
+        <div class="hourly-container">
+          <h3 class="hourly-header"><i class="fas fa-clock"></i> Почасовий прогноз</h3>
+          <div class="hourly-forecast" id="hourlyForecast"></div>
+        </div>
+        
+        <div id="map"></div>
+        
+        <div class="stats-container">
+          <div class="stat-card">
+            <div class="stat-title">Індекс УФ</div>
+            <div class="stat-value"><span id="uvIndex">0</span> <span id="uvLevel" class="uv-index uv-low">Низький</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Якість повітря</div>
+            <div class="stat-value"><span id="airQuality">Добра</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Опади</div>
+            <div class="stat-value"><span id="precipitation">0</span> мм</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Хмарність</div>
+            <div class="stat-value"><span id="cloudCover">0</span>%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>© 2025 MeteoUA | Використовує дані OpenWeatherMap | Розроблено з ❤️ для України</p>
+    </footer>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+  <script>
+    const apiKey = '75bbd87725d5ab4f7dc8eaa3700764a0';
+    let currentUnit = 'metric';
+    let lastCity = '';
+    let map = null;
+    let mapInitialized = false;
+
+    // Initialize particles background
+    particlesJS("particles-js", {
+      particles: {
+        number: { value: 60, density: { enable: true, value_area: 800 } },
+        color: { value: "#ffffff" },
+        shape: { type: "circle" },
+        opacity: { value: 0.1, random: true },
+        size: { value: 3, random: true },
+        line_linked: {
+          enable: true,
+          distance: 150,
+          color: "#ffffff",
+          opacity: 0.05,
+          width: 1
+        },
+        move: {
+          enable: true,
+          speed: 1,
+          direction: "none",
+          random: true,
+          straight: false,
+          out_mode: "out",
+          bounce: false
+        }
+      },
+      interactivity: {
+        detect_on: "canvas",
+        events: {
+          onhover: { enable: true, mode: "repulse" },
+          onclick: { enable: true, mode: "push" },
+          resize: true
+        }
+      }
+    });
+
+    // Initialize dark mode from localStorage
+    function initDarkMode() {
+      const isDark = localStorage.getItem('darkMode') === 'true';
+      document.body.classList.toggle('dark-mode', isDark);
+      updateThemeButton(isDark);
+    }
+
+    function toggleDarkMode() {
+      const isDark = !document.body.classList.contains('dark-mode');
+      document.body.classList.toggle('dark-mode', isDark);
+      localStorage.setItem('darkMode', isDark);
+      updateThemeButton(isDark);
+    }
+    
+    function updateThemeButton(isDark) {
+      const icon = isDark ? 'fa-sun' : 'fa-moon';
+      const text = isDark ? 'Світлий режим' : 'Темний режим';
+      document.querySelector('.theme-toggle').innerHTML = 
+        `<i class="fas ${icon}"></i> ${text}`;
+    }
+
+    function setUnit(unit) {
+      currentUnit = unit;
+      document.querySelectorAll('.unit-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      
+      if (lastCity) {
+        getWeather();
+      }
+    }
+
+    function setCity(cityName) {
+      document.getElementById("city").value = cityName;
+      getWeather();
+    }
+
+    function getLocation() {
+      if (navigator.geolocation) {
+        showLoading();
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            getWeatherByCoords(lat, lon);
+          },
+          error => {
+            hideLoading();
+            showError("Не вдалося отримати ваше місцезнаходження");
+          }
+        );
+      } else {
+        showError("Геолокація не підтримується вашим браузером");
+      }
+    }
+
+    function getWeatherByCoords(lat, lon) {
+      const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&lang=uk&units=${currentUnit}`;
+      fetchWeather(url);
+      
+      // Initialize map if not already
+      if (!mapInitialized) {
+        initMap(lat, lon);
+      } else {
+        map.setView([lat, lon], 10);
+      }
+    }
+
+    function initMap(lat, lon) {
+      if (!map) {
+        map = L.map('map').setView([lat, lon], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Add marker
+        L.marker([lat, lon]).addTo(map)
+          .bindPopup('Ваше місцезнаходження')
+          .openPopup();
+          
+        mapInitialized = true;
+      }
+    }
+
+    function getWeather() {
+      const city = document.getElementById("city").value;
+      if (!city.trim()) {
+        showError("Будь ласка, введіть назву міста");
+        return;
+      }
+      
+      lastCity = city;
+      localStorage.setItem('lastCity', city);
+      
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&lang=uk&units=${currentUnit}`;
+      showLoading();
+      fetchWeather(url);
+    }
+
+    function fetchWeather(url) {
+      fetch(url)
+        .then(response => {
+          if (!response.ok) throw new Error("Місто не знайдено");
+          return response.json();
+        })
+        .then(data => {
+          displayWeather(data);
+          getForecast(data.name);
+          getHourlyForecast(data.coord.lat, data.coord.lon);
+          updateStats();
+          
+          // Initialize map
+          if (!mapInitialized) {
+            initMap(data.coord.lat, data.coord.lon);
+          } else {
+            map.setView([data.coord.lat, data.coord.lon], 10);
+            // Clear existing markers and add new
+            map.eachLayer(layer => {
+              if (layer instanceof L.Marker) {
+                map.removeLayer(layer);
+              }
+            });
+            L.marker([data.coord.lat, data.coord.lon]).addTo(map)
+              .bindPopup(data.name)
+              .openPopup();
+          }
+        })
+        .catch(error => {
+          showError(error.message);
+        });
+    }
+
+    function displayWeather(data) {
+      hideLoading();
+      
+      const tempUnit = currentUnit === 'metric' ? '°C' : '°F';
+      const speedUnit = currentUnit === 'metric' ? 'м/с' : 'миль/год';
+      const weatherIcon = getWeatherIcon(data.weather[0].id);
+      
+      // Convert sunrise/sunset to local time
+      const sunrise = new Date(data.sys.sunrise * 1000);
+      const sunset = new Date(data.sys.sunset * 1000);
+      
+      const result = `
+        <div class="weather-info">
+          <div class="city-name">${data.name}</div>
+          <div class="weather-icon">${weatherIcon}</div>
+          <div class="temp">${Math.round(data.main.temp)}${tempUnit}</div>
+          <div class="weather-desc">${data.weather[0].description}</div>
+          <div class="feels-like">Відчувається як: ${Math.round(data.main.feels_like)}${tempUnit}</div>
+          
+          <div class="details">
+            <div class="detail-card">
+              <i class="fas fa-tint"></i>
+              <div class="detail-value">${data.main.humidity}%</div>
+              <div class="detail-label">Вологість</div>
+            </div>
+            <div class="detail-card">
+              <i class="fas fa-wind"></i>
+              <div class="detail-value">${data.wind.speed} ${speedUnit}</div>
+              <div class="detail-label">Вітер</div>
+            </div>
+            <div class="detail-card">
+              <i class="fas fa-tachometer-alt"></i>
+              <div class="detail-value">${data.main.pressure} hPa</div>
+              <div class="detail-label">Тиск</div>
+            </div>
+            <div class="detail-card">
+              <i class="fas fa-sun"></i>
+              <div class="detail-value">${sunrise.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+              <div class="detail-label">Схід</div>
+            </div>
+            <div class="detail-card">
+              <i class="fas fa-moon"></i>
+              <div class="detail-value">${sunset.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+              <div class="detail-label">Захід</div>
+            </div>
+            <div class="detail-card">
+              <i class="fas fa-eye"></i>
+              <div class="detail-value">${(data.visibility/1000).toFixed(1)} км</div>
+              <div class="detail-label">Видимість</div>
+            </div>
+          </div>
+          
+          <div class="update-time">
+            Оновлено: ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+          </div>
+        </div>
+      `;
+      
+      document.getElementById("result").innerHTML = result;
+      document.getElementById("forecastContainer").style.display = 'block';
+      
+      // Add animation to weather icon
+      setTimeout(() => {
+        const icon = document.querySelector('.weather-icon');
+        if (icon) {
+          icon.style.transform = 'scale(1.1)';
+          setTimeout(() => icon.style.transform = 'scale(1)', 500);
+        }
+      }, 100);
+    }
+
+    function getForecast(city) {
+      const url = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&lang=uk&units=${currentUnit}`;
+      
+      fetch(url)
+        .then(response => {
+          if (!response.ok) throw new Error("Помилка прогнозу");
+          return response.json();
+        })
+        .then(data => {
+          displayForecast(data);
+        })
+        .catch(error => {
+          console.error("Помилка прогнозу:", error);
+          document.getElementById("forecastContainer").style.display = 'none';
+        });
+    }
+
+    function getHourlyForecast(lat, lon) {
+      const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&lang=uk&units=${currentUnit}`;
+      
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          displayHourlyForecast(data);
+        })
+        .catch(error => {
+          console.error("Помилка почасового прогнозу:", error);
+        });
+    }
+
+    function displayForecast(data) {
+      const forecastElement = document.getElementById("forecast");
+      forecastElement.innerHTML = '';
+      
+      // Filter for one forecast per day (at 12:00)
+      const dailyForecast = data.list.filter(item => 
+        item.dt_txt.includes("12:00:00")
+      ).slice(0, 5);
+
+      dailyForecast.forEach(day => {
+        const date = new Date(day.dt * 1000);
+        const dayName = date.toLocaleDateString('uk-UA', { weekday: 'long' });
+        const tempUnit = currentUnit === 'metric' ? '°C' : '°F';
+        const weatherIcon = getWeatherIcon(day.weather[0].id);
+        
+        forecastElement.innerHTML += `
+          <div class="forecast-card">
+            <div class="forecast-day">${dayName}</div>
+            <div class="forecast-icon">${weatherIcon}</div>
+            <div class="forecast-temp">${Math.round(day.main.temp)}${tempUnit}</div>
+            <div class="forecast-desc">${day.weather[0].description}</div>
+          </div>
+        `;
+      });
+    }
+
+    function displayHourlyForecast(data) {
+      const hourlyElement = document.getElementById("hourlyForecast");
+      hourlyElement.innerHTML = '';
+      
+      // Get next 8 hours
+      const hourlyData = data.list.slice(0, 8);
+      
+      hourlyData.forEach(hour => {
+        const date = new Date(hour.dt * 1000);
+        const time = date.toLocaleTimeString([], {hour: '2-digit'});
+        const tempUnit = currentUnit === 'metric' ? '°C' : '°F';
+        const weatherIcon = getWeatherIcon(hour.weather[0].id);
+        
+        hourlyElement.innerHTML += `
+          <div class="hourly-card">
+            <div class="hourly-time">${time}</div>
+            <div class="hourly-icon">${weatherIcon}</div>
+            <div class="hourly-temp">${Math.round(hour.main.temp)}${tempUnit}</div>
+          </div>
+        `;
+      });
+    }
+
+    function updateStats() {
+      // Simulate data for demo
+      const uvIndex = Math.floor(Math.random() * 11);
+      document.getElementById('uvIndex').textContent = uvIndex;
+      
+      let uvLevel = 'Низький';
+      let uvClass = 'uv-low';
+      if (uvIndex >= 3 && uvIndex <= 5) {
+        uvLevel = 'Помірний';
+        uvClass = 'uv-moderate';
+      } else if (uvIndex >= 6 && uvIndex <= 7) {
+        uvLevel = 'Високий';
+        uvClass = 'uv-high';
+      } else if (uvIndex >= 8 && uvIndex <= 10) {
+        uvLevel = 'Дуже високий';
+        uvClass = 'uv-very-high';
+      } else if (uvIndex > 10) {
+        uvLevel = 'Екстремальний';
+        uvClass = 'uv-extreme';
+      }
+      
+      document.getElementById('uvLevel').textContent = uvLevel;
+      document.getElementById('uvLevel').className = `uv-index ${uvClass}`;
+      
+      // Simulate other stats
+      document.getElementById('precipitation').textContent = Math.floor(Math.random() * 20);
+      document.getElementById('cloudCover').textContent = Math.floor(Math.random() * 100);
+      
+      const airQuality = ['Добра', 'Помірна', 'Небезпечна для чутливих груп', 'Небезпечна', 'Дуже небезпечна'];
+      document.getElementById('airQuality').textContent = airQuality[Math.floor(Math.random() * airQuality.length)];
+    }
+
+    function getWeatherIcon(weatherId) {
+      // Thunderstorm
+      if (weatherId >= 200 && weatherId < 300) {
+        return '<i class="fas fa-bolt"></i>';
+      }
+      // Drizzle
+      else if (weatherId >= 300 && weatherId < 400) {
+        return '<i class="fas fa-cloud-rain"></i>';
+      }
+      // Rain
+      else if (weatherId >= 500 && weatherId < 600) {
+        return weatherId == 511 ? '<i class="fas fa-icicles"></i>' : '<i class="fas fa-cloud-showers-heavy"></i>';
+      }
+      // Snow
+      else if (weatherId >= 600 && weatherId < 700) {
+        return '<i class="fas fa-snowflake"></i>';
+      }
+      // Atmosphere
+      else if (weatherId >= 700 && weatherId < 800) {
+        return '<i class="fas fa-smog"></i>';
+      }
+      // Clear
+      else if (weatherId === 800) {
+        return '<i class="fas fa-sun"></i>';
+      }
+      // Clouds
+      else if (weatherId >= 801 && weatherId < 900) {
+        return weatherId === 801 ? '<i class="fas fa-cloud-sun"></i>' : '<i class="fas fa-cloud"></i>';
+      }
+      // Default
+      else {
+        return '<i class="fas fa-cloud"></i>';
+      }
+    }
+
+    function showLoading() {
+      document.querySelector(".loading").style.display = "block";
+      document.getElementById("result").innerHTML = "";
+    }
+
+    function hideLoading() {
+      document.querySelector(".loading").style.display = "none";
+    }
+
+    function showError(message) {
+      hideLoading();
+      document.getElementById("result").innerHTML = `
+        <div class="error">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>${message}</p>
+          <button onclick="resetApp()">
+            <i class="fas fa-redo"></i> Спробувати знову
+          </button>
+        </div>
+      `;
+      document.getElementById("forecastContainer").style.display = 'none';
+    }
+
+    function resetApp() {
+      document.getElementById("city").value = "";
+      document.getElementById("result").innerHTML = `
+        <div class="welcome-message">
+          <i class="fas fa-cloud-sun weather-icon"></i>
+          <h2 class="city-name">Ласкаво просимо!</h2>
+          <p class="weather-desc">Введіть назву міста, щоб дізнатися поточну погоду</p>
+        </div>
+      `;
+      document.getElementById("forecastContainer").style.display = 'none';
+    }
+
+    // Handle Enter key press
+    document.getElementById("city").addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        getWeather();
+      }
+    });
+
+    // Initialize
+    window.onload = function() {
+      initDarkMode();
+      
+      // Load last city from localStorage
+      const savedCity = localStorage.getItem('lastCity');
+      if (savedCity) {
+        document.getElementById("city").value = savedCity;
+        getWeather();
+      } else {
+        setCity('Київ');
+      }
+    };
+  </script>
+</body>
+</html>
