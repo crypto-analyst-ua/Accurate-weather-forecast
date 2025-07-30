@@ -837,30 +837,6 @@
       justify-content: center;
     }
 
-    /* Precipitation Chart */
-    .precipitation-chart {
-      height: 100px;
-      margin-top: 15px;
-      position: relative;
-    }
-
-    .chart-bar {
-      position: absolute;
-      bottom: 0;
-      width: 30px;
-      background: linear-gradient(to top, #4facfe, #00f2fe);
-      border-radius: 5px 5px 0 0;
-      transition: height 0.5s ease;
-    }
-
-    .chart-label {
-      position: absolute;
-      bottom: -25px;
-      font-size: 0.8rem;
-      text-align: center;
-      width: 100%;
-    }
-
     /* Додаємо стилі для автодоповнення */
     .suggestions-container {
       position: absolute;
@@ -1270,24 +1246,10 @@
         
         <div id="map"></div>
         
-        <div class="precipitation-chart" id="precipitationChart"></div>
-        
         <div class="stats-container">
-          <div class="stat-card">
-            <div class="stat-title">Індекс УФ</div>
-            <div class="stat-value"><span id="uvIndex">0</span> <span id="uvLevel" class="uv-index uv-low">Низький</span></div>
-          </div>
           <div class="stat-card">
             <div class="stat-title">Якість повітря</div>
             <div class="stat-value"><span id="airQuality">Добра</span></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-title">Опади</div>
-            <div class="stat-value"><span id="precipitation">0</span> мм</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-title">Хмарність</div>
-            <div class="stat-value"><span id="cloudCover">0</span>%</div>
           </div>
         </div>
       </div>
@@ -1690,12 +1652,6 @@
       document.getElementById("forecastContainer").style.display = 'block';
       document.getElementById("savedContainer").style.display = 'block';
       
-      // Render precipitation chart
-      renderPrecipitationChart();
-      
-      // Update stats
-      updateStats();
-      
       // Add animation to weather icon
       setTimeout(() => {
         const icon = document.querySelector('.weather-icon');
@@ -1773,7 +1729,6 @@
         .then(response => response.json())
         .then(data => {
           displayHourlyForecast(data);
-          renderTemperatureChart(data.list.slice(0, 8));
         })
         .catch(error => {
           console.error("Помилка почасового прогнозу:", error);
@@ -1833,63 +1788,6 @@
           </div>
         `;
       });
-    }
-    
-    function renderPrecipitationChart() {
-      const chart = document.getElementById('precipitationChart');
-      chart.innerHTML = '';
-      
-      // Generate random precipitation data for demo
-      for (let i = 0; i < 7; i++) {
-        const precip = Math.floor(Math.random() * 30);
-        const bar = document.createElement('div');
-        bar.className = 'chart-bar';
-        bar.style.height = `${precip}px`;
-        bar.style.left = `${15 + i * 50}px`;
-        bar.style.width = '30px';
-        
-        const label = document.createElement('div');
-        label.className = 'chart-label';
-        label.textContent = `${i+1} год`;
-        
-        chart.appendChild(bar);
-        chart.appendChild(label);
-      }
-    }
-    
-    function renderTemperatureChart(hourlyData) {
-      // This would normally use a charting library
-      // For simplicity, we'll just update the precipitation chart
-      document.getElementById('precipitation').textContent = 
-        Math.floor(Math.random() * 20);
-    }
-
-    function updateStats() {
-      // Simulate data for demo
-      const uvIndex = Math.floor(Math.random() * 11);
-      document.getElementById('uvIndex').textContent = uvIndex;
-      
-      let uvLevel = 'Низький';
-      let uvClass = 'uv-low';
-      if (uvIndex >= 3 && uvIndex <= 5) {
-        uvLevel = 'Помірний';
-        uvClass = 'uv-moderate';
-      } else if (uvIndex >= 6 && uvIndex <= 7) {
-        uvLevel = 'Високий';
-        uvClass = 'uv-high';
-      } else if (uvIndex >= 8 && uvIndex <= 10) {
-        uvLevel = 'Дуже високий';
-        uvClass = 'uv-very-high';
-      } else if (uvIndex > 10) {
-        uvLevel = 'Екстремальний';
-        uvClass = 'uv-extreme';
-      }
-      
-      document.getElementById('uvLevel').textContent = uvLevel;
-      document.getElementById('uvLevel').className = `uv-index ${uvClass}`;
-      
-      // Simulate other stats
-      document.getElementById('cloudCover').textContent = Math.floor(Math.random() * 100);
     }
 
     function getWeatherIcon(weatherId) {
